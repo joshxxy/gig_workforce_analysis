@@ -119,6 +119,5 @@ from pyngrok import ngrok
 public_url = ngrok.connect(5000)
 print("🌍 Public URL:", public_url)
 
-app.run(host="0.0.0.0", port=5000)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
