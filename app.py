@@ -114,10 +114,7 @@ if __name__ == "__main__":
     print("🚀 Starting Gig Workforce Retention App...")
     print("🌐 Open: http://127.0.0.1:5000")
     app.run(debug=True)
-from pyngrok import ngrok
 
-public_url = ngrok.connect(5000)
-print("🌍 Public URL:", public_url)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
