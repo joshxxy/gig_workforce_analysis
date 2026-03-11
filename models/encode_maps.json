@@ -1,0 +1,144 @@
+{
+  "age_group": {
+    "18-22": 0,
+    "23-27": 1,
+    "28-35": 2,
+    "36-49": 3
+  },
+  "highest_education": {
+    "Diploma": 0,
+    "Postgraduate degree (PG)": 1,
+    "School Level": 2,
+    "Undergraduate degree (UG)": 3
+  },
+  "employment_status_before_gig": {
+    "Retired": 0,
+    "Student": 1,
+    "Unemployed": 2,
+    "Working Professional": 3
+  },
+  "gig_primary_income": {
+    "I use it occasionally / on-demand": 0,
+    "No this is my secondary job": 1,
+    "Yes this is my primary job": 2
+  },
+  "gig_experience": {
+    "3-6 months": 0,
+    "6-12 months": 1,
+    "Less than 3 months": 2,
+    "More than 1 year": 3
+  },
+  "avg_work_hours_per_day": {
+    "4-6 hours": 0,
+    "6-8 hours": 1,
+    "Less than 4 hours": 2,
+    "More than 8 hours": 3
+  },
+  "days_worked_per_week": {
+    "1-2": 0,
+    "3-4": 1,
+    "5-6": 2,
+    "7": 3
+  },
+  "work_days": {
+    "Both weekdays and weekends": 0,
+    "Mostly weekdays": 1,
+    "Mostly weekends": 2
+  },
+  "preferred_time": {
+    "Afternoon": 0,
+    "Evening": 1,
+    "Flexible": 2,
+    "Morning": 3,
+    "Night": 4
+  },
+  "weekly_earnings": {
+    "3000 - 6000": 0,
+    "6000 - 10000": 1,
+    "Above 10000": 2,
+    "Below 3000": 3
+  },
+  "incentive_contribution": {
+    "Low contribution": 0,
+    "Moderate contribution": 1,
+    "No incentives": 2,
+    "Very high contribution": 3
+  },
+  "performance_incentive": {
+    "Never": 0,
+    "Rarely": 1,
+    "Yes occasionally": 2,
+    "Yes regularly": 3
+  },
+  "rain_incentive": {
+    "No": 0,
+    "Not applicable (do not work in rain)": 1,
+    "Yes": 2
+  },
+  "festival_incentive": {
+    "No": 0,
+    "Not sure": 1,
+    "Yes": 2
+  },
+  "weekly_target_completion": {
+    "Almost Always": 0,
+    "Never": 1,
+    "Rarely": 2,
+    "Sometimes": 3
+  },
+  "retention_if_no_incentive": {
+    "No": 0,
+    "Not sure": 1,
+    "Yes": 2
+  },
+  "health_impact": {
+    "Major issue": 0,
+    "Minor issue": 1,
+    "No issue": 2
+  },
+  "vehicle_type": {
+    "Bike": 0,
+    "Cycle": 1,
+    "Electric Vehicle": 2
+  },
+  "vehicle_expense": {
+    "0": 0,
+    "300-700": 1,
+    "700-1200": 2,
+    "Less than 300": 3,
+    "More than 1200": 4
+  },
+  "future_gig_retention": {
+    "No": 0,
+    "Not sure": 1,
+    "Yes": 2
+  },
+  "prefer_fixed_salary_job": {
+    "Depends on salary": 0,
+    "No": 1,
+    "Yes": 2
+  },
+  "likely_attrition_reason": {
+    "Family or personal reasons": 0,
+    "Getting a full-time job": 1,
+    "Health or physical strain": 2,
+    "Low earnings": 3,
+    "Reduction in incentives": 4,
+    "Vehicle or fuel cost issues": 5
+  },
+  "expected_gig_duration": {
+    "1 - 2 years": 0,
+    "6 months - 1 year": 1,
+    "Less than 6 months": 2,
+    "More than 2 years": 3
+  },
+  "primary_retention_reason": {
+    "Flexible working hours": 0,
+    "Immediate and regular income": 1,
+    "Incentives and bonuses": 2,
+    "Independence / being your own boss": 3,
+    "Lack of better job opportunities": 4,
+    "Staying active (post-retirement)": 5,
+    "Supplementary / secondary income": 6
+  }
+}

@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GigPulse — Workforce Retention Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg:      #0a0d14;
+    --surface: #111520;
+    --card:    #161c2d;
+    --border:  #1e2840;
+    --accent:  #4f8ef7;
+    --accent2: #f7c94f;
+    --green:   #3dffa0;
+    --red:     #ff5f6d;
+    --yellow:  #ffd86e;
+    --text:    #e8eaf2;
+    --muted:   #6b7594;
+    --radius:  14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* background grid */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(10,13,20,.85);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; }
+  .nav-logo span { color: var(--accent); }
+  .nav-tag {
+    background: rgba(79,142,247,.12);
+    color: var(--accent);
+    font-size: .72rem; font-weight: 500; letter-spacing: .06em;
+    padding: .3rem .8rem; border-radius: 100px;
+    border: 1px solid rgba(79,142,247,.25);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(247,201,79,.1);
+    color: var(--accent2);
+    font-size: .75rem; font-weight: 600; letter-spacing: .1em;
+    padding: .35rem 1rem; border-radius: 100px;
+    border: 1px solid rgba(247,201,79,.25);
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--muted); max-width: 520px; margin: 0 auto 2rem; font-size: 1.05rem; line-height: 1.7; }
+
+  .stat-row { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
+  .stat-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: .5rem 1.1rem;
+    font-size: .82rem;
+  }
+  .stat-chip b { color: var(--accent); margin-right: .3rem; }
+
+  /* Layout */
+  .main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+  @media(max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media(max-width: 500px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: .45rem; }
+  .field label {
+    font-size: .75rem; font-weight: 500; letter-spacing: .04em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .field select, .field input[type=number] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    padding: .65rem .9rem;
+    width: 100%;
+    /* FIX 1: appearance none was hiding select arrow on some browsers */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
+    /* FIX 2: add custom dropdown arrow via background */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7594' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    padding-right: 2.2rem;
+  }
+  .field select:focus, .field input[type=number]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,142,247,.15);
+  }
+  .field select option { background: #1a2035; color: var(--text); }
+
+  /* FIX 3: error highlight class for validation */
+  .field select.error { border-color: var(--red) !important; }
+
+  /* Slider */
+  .slider-wrap { display: flex; flex-direction: column; gap: .4rem; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; }
+  .slider-header label { font-size: .75rem; font-weight: 500; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
+  .slider-val {
+    font-size: .85rem; color: var(--accent); font-weight: 700;
+    background: rgba(79,142,247,.1);
+    border: 1px solid rgba(79,142,247,.2);
+    border-radius: 6px;
+    padding: .1rem .5rem;
+    min-width: 28px; text-align: center;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+    /* FIX 4: removed padding:0 which broke range on Firefox */
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(79,142,247,.5);
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+  }
+  /* FIX 5: slider tick labels */
+  .slider-ticks { display: flex; justify-content: space-between; font-size: .65rem; color: var(--muted); margin-top: .15rem; }
+
+  /* Predict Button */
+  .btn-predict {
+    margin-top: 1.5rem;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), #2563eb);
+    color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    letter-spacing: .03em;
+    padding: 1rem;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .2s, opacity .2s;
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+  }
+  .btn-predict:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,142,247,.35); }
+  .btn-predict:active:not(:disabled) { transform: translateY(0); }
+  .btn-predict:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* FIX 6: spinner was using display:none inside flex — changed to visibility */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Section divider */
+  .section-head {
+    font-family: 'Syne', sans-serif; font-size: .7rem;
+    text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted);
+    display: flex; align-items: center; gap: .75rem;
+    margin: 1.8rem 0 1rem;
+  }
+  .section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Results */
+  /* FIX 7: was using display:none toggled to display:block — but block breaks grid child.
+     Changed to visibility + opacity + height approach for smooth animation */
+  #results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  #results.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  .result-hero {
+    text-align: center;
+    padding: 2rem 1rem;
+    border-radius: 12px;
+    transition: background .4s, border .4s;
+  }
+  .result-hero.yes   { background: rgba(61,255,160,.06);  border: 1px solid rgba(61,255,160,.25); }
+  .result-hero.no    { background: rgba(255,95,109,.06);  border: 1px solid rgba(255,95,109,.25); }
+  .result-hero.maybe { background: rgba(255,216,110,.06); border: 1px solid rgba(255,216,110,.25); }
+
+  .result-emoji { font-size: 3rem; margin-bottom: .5rem; display: block; }
+  .result-label { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; }
+  .result-hero.yes   .result-label { color: var(--green); }
+  .result-hero.no    .result-label { color: var(--red); }
+  .result-hero.maybe .result-label { color: var(--yellow); }
+  .result-sub { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
+
+  .confidence-bar {
+    background: var(--surface); border-radius: 8px; height: 6px;
+    margin: 1rem auto; max-width: 220px; overflow: hidden;
+  }
+  .confidence-fill { height: 100%; border-radius: 8px; width: 0%; transition: width 1.2s ease; }
+  .yes   .confidence-fill { background: var(--green); }
+  .no    .confidence-fill { background: var(--red); }
+  .maybe .confidence-fill { background: var(--yellow); }
+  .conf-text { font-size: .78rem; color: var(--muted); margin-top: .4rem; }
+
+  /* Info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  @media(max-width: 420px) { .info-grid { grid-template-columns: 1fr; } }
+
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .info-box .ib-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .4rem; }
+  .info-box .ib-value { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+
+  /* Probability bars */
+  .prob-list { display: flex; flex-direction: column; gap: .9rem; }
+  .prob-header { display: flex; justify-content: space-between; margin-bottom: .35rem; font-size: .83rem; }
+  .prob-header .prob-pct { color: var(--accent); font-weight: 600; }
+  .prob-track { background: var(--surface); border-radius: 4px; height: 6px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 1.3s cubic-bezier(.22,1,.36,1); }
+
+  /* Chart */
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* Loading overlay */
+  #loading {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(10,13,20,.75);
+    backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 1rem;
+  }
+  #loading.show { display: flex; }
+  .load-ring {
+    width: 56px; height: 56px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .9s linear infinite;
+  }
+  #loading p { color: var(--muted); font-size: .9rem; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: .9rem 1.3rem;
+    font-size: .85rem; max-width: 300px;
+    transform: translateY(100px); opacity: 0;
+    transition: all .35s cubic-bezier(.22,1,.36,1);
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.error { border-color: rgba(255,95,109,.4); color: var(--red); }
+  #toast.success { border-color: rgba(61,255,160,.3); color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <div class="load-ring"></div>
+  <p>Running prediction models…</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">Gig<span>Pulse</span></div>
+  <div class="nav-tag">ML POWERED · RETENTION ANALYSIS</div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">🚀 Gig Workforce Analytics Platform</div>
+  <h1>Predict Worker <em>Retention</em><br/>Before It's Too Late</h1>
+  <p>Fill in the worker profile below. Our dual ML model (XGBoost + KMeans) will predict retention likelihood and classify the worker's risk segment.</p>
+  <div class="stat-row">
+    <div class="stat-chip"><b>123</b> Workers Trained On</div>
+    <div class="stat-chip"><b>XGBoost</b> Primary Model</div>
+    <div class="stat-chip"><b>KMeans</b> Risk Clustering</div>
+    <div class="stat-chip"><b>24</b> Features Analyzed</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="layout">
+
+    <!-- INPUT FORM -->
+    <div class="card" id="formCard">
+      <div class="card-title">📋 Worker Profile Input</div>
+
+      <!-- FIX 8: added id="formLoading" placeholder while dropdowns load -->
+      <div id="formLoading" style="color:var(--muted); font-size:.9rem; padding:1rem 0;">
+        ⏳ Loading form fields…
+      </div>
+
+      <div class="form-grid" id="formGrid"></div>
+
+      <div class="section-head">Numeric Ratings (1 = Low · 5 = High)</div>
+      <div class="form-grid" id="sliderGrid"></div>
+
+      <button class="btn-predict" id="predictBtn" onclick="runPrediction()">
+        <span id="btnText">⚡ Predict Retention</span>
+        <div class="spinner" id="btnSpinner"></div>
+      </button>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div id="results">
+
+      <!-- Verdict card -->
+      <div class="card">
+        <div class="card-title">🎯 Prediction Result</div>
+
+        <div id="resultHero" class="result-hero">
+          <span id="resultEmoji" class="result-emoji">❓</span>
+          <div id="resultLabel" class="result-label">—</div>
+          <div id="resultSub"   class="result-sub">—</div>
+          <div class="confidence-bar">
+            <div id="confFill" class="confidence-fill"></div>
+          </div>
+          <div id="confText" class="conf-text"></div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="ib-label">🤖 XGBoost Prediction</div>
+            <div class="ib-value" id="xgbSays">—</div>
+          </div>
+          <div class="info-box">
+            <div class="ib-label">🌲 Random Forest</div>
+            <div class="ib-value" id="rfSays">—</div>
+          </div>
+          <div class="info-box" style="grid-column:1/-1">
+            <div class="ib-label">👥 KMeans Risk Cluster</div>
+            <div class="ib-value" id="clusterSays">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Probability card -->
+      <div class="card">
+        <div class="card-title">📊 Probability Breakdown</div>
+        <div class="prob-list" id="probList"></div>
+      </div>
+
+      <!-- Feature importance card -->
+      <div class="card">
+        <div class="card-title">📈 Top Feature Importances</div>
+        <div class="chart-wrap">
+          <canvas id="featChart"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /results -->
+
+  </div><!-- /layout -->
+</div><!-- /main -->
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG — slider fields (numeric 1-5)
+// ─────────────────────────────────────────────
+const SLIDER_FIELDS = [
+  { key: "incentive_motivation",     label: "Incentive Motivation" },
+  { key: "job_satisfaction",         label: "Job Satisfaction" },
+  { key: "delivery_reliability",     label: "Delivery Reliability" },
+  { key: "expense_impact_on_income", label: "Expense Impact on Income" },
+];
+const SLIDER_KEYS = SLIDER_FIELDS.map(f => f.key);
+
+// ─────────────────────────────────────────────
+//  LOAD FORM FROM BACKEND
+// ─────────────────────────────────────────────
+async function loadForm() {
+  try {
+    const res  = await fetch("/get_options");
+
+    // FIX 9: check HTTP status before parsing
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    const opts = await res.json();
+
+    document.getElementById("formLoading").style.display = "none";
+
+    const formGrid   = document.getElementById("formGrid");
+    const sliderGrid = document.getElementById("sliderGrid");
+
+    // ── Dropdowns ──
+    for (const [key, values] of Object.entries(opts)) {
+      if (SLIDER_KEYS.includes(key)) continue;
+
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const div   = document.createElement("div");
+      div.className = "field";
+      div.innerHTML = `
+        <label for="field_${key}">${label}</label>
+        <select id="field_${key}" name="${key}">
+          <option value="">— Select —</option>
+          ${values.map(v => `<option value="${escHtml(v)}">${escHtml(v)}</option>`).join("")}
+        </select>`;
+      formGrid.appendChild(div);
+    }
+
+    // ── Sliders ──
+    SLIDER_FIELDS.forEach(({ key, label }) => {
+      const div = document.createElement("div");
+      div.className = "field slider-wrap";
+      div.innerHTML = `
+        <div class="slider-header">
+          <label for="field_${key}">${label}</label>
+          <span class="slider-val" id="val_${key}">3</span>
+        </div>
+        <input type="range" id="field_${key}" min="1" max="5" value="3"
+          oninput="document.getElementById('val_${key}').textContent = this.value"/>
+        <div class="slider-ticks">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        </div>`;
+      sliderGrid.appendChild(div);
+    });
+
+    showToast("✅ Form loaded successfully", false);
+
+  } catch(e) {
+    document.getElementById("formLoading").textContent =
+      "❌ Failed to load form. Make sure Flask server is running.";
+    showToast("Failed to load form: " + e.message, true);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PREDICT
+// ─────────────────────────────────────────────
+let featChart = null;
+
+async function runPrediction() {
+  const payload  = {};
+  let   hasError = false;
+
+  // FIX 10: clear previous errors first
+  document.querySelectorAll("select.error").forEach(el => el.classList.remove("error"));
+
+  // Collect dropdowns
+  document.querySelectorAll("#formGrid select").forEach(el => {
+    const key = el.id.replace("field_", "");
+    if (!el.value) {
+      el.classList.add("error");
+      hasError = true;
+    } else {
+      payload[key] = el.value;
+    }
+  });
+
+  // Collect sliders
+  document.querySelectorAll("#sliderGrid input[type=range]").forEach(el => {
+    const key = el.id.replace("field_", "");
+    payload[key] = parseInt(el.value);
+  });
+
+  if (hasError) {
+    showToast("⚠️ Please select all dropdown fields", true);
+    return;
+  }
+
+  setBtnLoading(true);
+  document.getElementById("loading").classList.add("show");
+
+  try {
+    const res = await fetch("/predict", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    renderResults(data);
+    await loadFeatureChart();   // FIX 11: await chart load after results render
+
+  } catch(e) {
+    showToast("❌ Error: " + e.message, true);
+  } finally {
+    setBtnLoading(false);
+    document.getElementById("loading").classList.remove("show");
+  }
+}
+
+// ─────────────────────────────────────────────
+//  RENDER RESULTS
+// ─────────────────────────────────────────────
+function renderResults(data) {
+  // FIX 12: show results panel (was broken with display:none → display:block on grid child)
+  const resultsEl = document.getElementById("results");
+  resultsEl.classList.add("visible");
+  setTimeout(() => resultsEl.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+
+  const pred = data.prediction;
+  const cfg  = {
+    "Yes":      { cls:"yes",   emoji:"✅", label:"Will RETAIN",  sub:"Worker is likely to continue in gig work" },
+    "No":       { cls:"no",    emoji:"🚨", label:"Will LEAVE",   sub:"Worker is at high risk of attrition" },
+    "Not sure": { cls:"maybe", emoji:"⚠️", label:"UNCERTAIN",    sub:"Worker's retention is currently undecided" },
+  };
+  const c = cfg[pred] ?? cfg["Not sure"];
+
+  const hero = document.getElementById("resultHero");
+  hero.className = "result-hero " + c.cls;
+
+  document.getElementById("resultEmoji").textContent = c.emoji;
+  document.getElementById("resultLabel").textContent = c.label;
+  document.getElementById("resultSub").textContent   = c.sub;
+  document.getElementById("confText").textContent    = `Model Confidence: ${data.confidence}%`;
+  document.getElementById("xgbSays").textContent     = data.prediction;
+  document.getElementById("rfSays").textContent      = data.rf_prediction;
+  document.getElementById("clusterSays").textContent = data.risk_cluster;
+
+  // Animate confidence bar (needs small delay for transition to trigger)
+  setTimeout(() => {
+    document.getElementById("confFill").style.width = data.confidence + "%";
+  }, 80);
+
+  // Probability bars
+  const probColors = {
+    "Yes":      "var(--green)",
+    "No":       "var(--red)",
+    "Not sure": "var(--yellow)"
+  };
+  const probList = document.getElementById("probList");
+  probList.innerHTML = "";
+
+  for (const [cls, pct] of Object.entries(data.probabilities)) {
+    const color = probColors[cls] || "var(--accent)";
+    probList.innerHTML += `
+      <div>
+        <div class="prob-header">
+          <span>${cls}</span>
+          <span class="prob-pct">${pct}%</span>
+        </div>
+        <div class="prob-track">
+          <div class="prob-fill" style="background:${color}" data-target="${pct}"></div>
+        </div>
+      </div>`;
+  }
+
+  // FIX 13: animate probability bars after DOM insertion
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".prob-fill").forEach(bar => {
+        bar.style.width = bar.dataset.target + "%";
+      });
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+//  FEATURE IMPORTANCE CHART
+// ─────────────────────────────────────────────
+async function loadFeatureChart() {
+  try {
+    const res  = await fetch("/feature_importance");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // FIX 14: destroy old chart properly before creating new one
+    if (featChart) {
+      featChart.destroy();
+      featChart = null;
+    }
+
+    const ctx = document.getElementById("featChart").getContext("2d");
+    featChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Importance (%)",
+          data:  data.values,
+          backgroundColor: data.values.map((_, i) =>
+            `hsla(${220 - i * 13}, 78%, 62%, 0.8)`),
+          borderColor: data.values.map((_, i) =>
+            `hsl(${220 - i * 13}, 78%, 62%)`),
+          borderWidth: 1,
+          borderRadius: 5,
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.x.toFixed(2)}% importance`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#6b7594", font: { size: 11 } },
+            grid:  { color: "#1e2840" }
+          },
+          y: {
+            ticks: { color: "#e8eaf2", font: { size: 11 } },
+            grid:  { display: false }
+          }
+        }
+      }
+    });
+  } catch(e) {
+    console.warn("Chart load error:", e);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function setBtnLoading(on) {
+  const btn     = document.getElementById("predictBtn");
+  const txtEl   = document.getElementById("btnText");
+  const spinEl  = document.getElementById("btnSpinner");
+  btn.disabled         = on;
+  txtEl.style.display  = on ? "none"  : "inline";
+  spinEl.style.display = on ? "block" : "none";
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = "show" + (isError ? " error" : " success");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ""; }, 3500);
+}
+
+// FIX 15: escape HTML to prevent XSS from option values
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+loadForm();
+</script>
+</body>
+</html>
