@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GigPulse — HR Admin Access</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0d16;--surface:#111827;--card:#161f32;
+  --border:#1e2d45;--accent:#4f8ef7;--accent2:#f7c94f;
+  --text:#e8eaf4;--muted:#5a6a88;--green:#3dffa0;--red:#ff5f6d;
+  --r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;z-0;background:radial-gradient(ellipse 60% 60% at 50% 10%,rgba(79,142,247,.08) 0%,transparent 60%);pointer-events:none}
+body::after{content:'';position:fixed;inset:0;z-0;background-image:linear-gradient(rgba(79,142,247,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+
+/* top bar */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);background:rgba(10,13,22,.9);border-bottom:1px solid var(--border);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem}
+.logo{font-size:1.15rem;font-weight:800;letter-spacing:-0.04em;font-family:'Sora',sans-serif}.logo span{color:var(--accent)}
+.role-tag{background:rgba(247,201,79,.12);color:var(--accent2);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .9rem;border-radius:100px;border:1px solid rgba(247,201,79,.25);font-family:'Fira Code',monospace}
+
+/* card */
+.login-wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:1.5rem}
+.lc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.lc-bar{height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.lc-body{padding:2.2rem 2rem}
+
+.shield{
+  width:72px;height:72px;border-radius:50%;
+  background:rgba(79,142,247,.1);border:2px solid rgba(79,142,247,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin:0 auto 1.4rem;
+  animation:shieldPulse 2.5s ease infinite;
+}
+@keyframes shieldPulse{0%,100%{box-shadow:0 0 0 0 rgba(79,142,247,.3)}50%{box-shadow:0 0 0 16px rgba(79,142,247,0)}}
+
+h2{font-size:1.45rem;font-weight:800;letter-spacing:-0.04em;text-align:center;margin-bottom:.4rem}
+.sub{color:var(--muted);font-size:.82rem;text-align:center;line-height:1.6;margin-bottom:1.8rem}
+
+.f{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.1rem}
+.f label{font-family:'Fira Code',monospace;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.f input{
+  background:rgba(255,255,255,.04);border:1.5px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-family:'Sora',sans-serif;font-size:.9rem;
+  padding:.72rem 1rem;width:100%;
+  transition:border-color .2s,box-shadow .2s;
+}
+.f input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.15)}
+.f input.err{border-color:var(--red)!important}
+.f input::placeholder{color:var(--muted)}
+
+.btn-login{
+  width:100%;background:linear-gradient(135deg,var(--accent),#2563eb);
+  color:#fff;border:none;border-radius:10px;
+  font-family:'Sora',sans-serif;font-size:.95rem;font-weight:700;
+  padding:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  transition:transform .15s,box-shadow .2s;margin-top:.5rem;
+}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(79,142,247,.35)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+
+.err-msg{
+  background:rgba(255,95,109,.08);border:1px solid rgba(255,95,109,.25);
+  border-radius:8px;padding:.7rem 1rem;
+  font-size:.8rem;color:var(--red);text-align:center;
+  margin-top:.8rem;display:none;
+}
+.err-msg.show{display:block}
+
+.divider{height:1px;background:var(--border);margin:1.5rem 0}
+.hint-row{text-align:center;font-size:.75rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:.5rem}
+.hint-badge{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:.2rem .6rem;font-family:'Fira Code',monospace;font-size:.7rem;color:var(--muted)}
+
+/* back link */
+.back{display:block;text-align:center;margin-top:1.4rem;font-size:.78rem;color:var(--muted);text-decoration:none;transition:color .2s}
+.back:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Gig<span>Pulse</span></div>
+  <div class="role-tag">Restricted Access</div>
+</div>
+
+<div class="login-wrap">
+  <div class="lc">
+    <div class="lc-bar"></div>
+    <div class="lc-body">
+      <div class="shield">🛡️</div>
+      <h2>HR / Admin Portal</h2>
+      <p class="sub">This area is restricted. Enter your credentials to access the ML prediction dashboard and worker retention reports.</p>
+
+      <div class="f">
+        <label>Username</label>
+        <input type="text" id="uname" placeholder="admin@gigpulse.in" autocomplete="off"/>
+      </div>
+      <div class="f">
+        <label>Password</label>
+        <input type="password" id="upass" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')login()"/>
+      </div>
+
+      <button class="btn-login" id="loginBtn" onclick="login()">🔓 Access Dashboard</button>
+      <div class="err-msg" id="errMsg">❌ Invalid credentials. Please try again.</div>
+
+      <div class="divider"></div>
+      <div class="hint-row">
+        Demo credentials: <span class="hint-badge">admin</span> / <span class="hint-badge">hr2024</span>
+      </div>
+    </div>
+  </div>
+  <a href="/" class="back">← Back to Employee Form</a>
+</div>
+
+<script>
+async function login(){
+  const u=document.getElementById('uname').value.trim();
+  const p=document.getElementById('upass').value.trim();
+  const err=document.getElementById('errMsg');
+  const btn=document.getElementById('loginBtn');
+
+  err.classList.remove('show');
+  document.getElementById('uname').classList.remove('err');
+  document.getElementById('upass').classList.remove('err');
+
+  if(!u||!p){
+    if(!u)document.getElementById('uname').classList.add('err');
+    if(!p)document.getElementById('upass').classList.add('err');
+    return;
+  }
+
+  btn.disabled=true;
+  btn.innerHTML='<span style="display:inline-block;animation:sp .7s linear infinite">⟳</span> Verifying…';
+
+  try {
+    const res = await fetch('/hr_auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      // Server session is set — also flag in sessionStorage for client-side guard
+      sessionStorage.setItem('hr_auth', '1');
+      window.location.href = '/predictions';
+    } else {
+      err.textContent = '❌ ' + (data.error || 'Invalid credentials. Please try again.');
+      err.classList.add('show');
+      btn.disabled=false;
+      btn.innerHTML='🔓 Access Dashboard';
+      document.getElementById('upass').value='';
+      document.getElementById('upass').classList.add('err');
+    }
+  } catch(e) {
+    err.textContent = '❌ Server error. Is Flask running?';
+    err.classList.add('show');
+    btn.disabled=false;
+    btn.innerHTML='🔓 Access Dashboard';
+  }
+}
+</script>
+<style>@keyframes sp{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

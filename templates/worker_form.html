@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GigPulse — Worker Profile Form</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0d16;--surface:#111827;--card:#161f32;
+  --border:#1e2d45;--accent:#4f8ef7;--accent2:#f7c94f;
+  --text:#e8eaf4;--muted:#5a6a88;--green:#3dffa0;--red:#ff5f6d;--r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Sora',sans-serif;min-height:100vh;overflow-x:hidden;
+}
+/* Same bg as HR login */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 60% 60% at 50% 10%,rgba(79,142,247,.08) 0%,transparent 60%);
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(79,142,247,.03) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(79,142,247,.03) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;
+}
+
+/* ── TOP BAR (same as hr_login) ── */
+.top-bar{
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(20px);background:rgba(10,13,22,.9);
+  border-bottom:1px solid var(--border);
+  padding:0 2.5rem;height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{font-size:1.15rem;font-weight:800;letter-spacing:-0.04em}
+.logo span{color:var(--accent)}
+.role-tag{
+  background:rgba(79,142,247,.12);color:var(--accent);
+  font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:.3rem .9rem;border-radius:100px;border:1px solid rgba(79,142,247,.25);
+  font-family:'Fira Code',monospace;
+}
+.step-row{display:flex;align-items:center;gap:.4rem}
+.stp{
+  width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);
+  font-size:.68rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+}
+.stp.on{background:var(--accent);color:#000;border-color:var(--accent);box-shadow:0 0 12px rgba(79,142,247,.5)}
+.stp.lock{color:var(--muted)}
+.stp-line{width:28px;height:1px;background:var(--border)}
+
+/* ── HERO ── */
+.hero{
+  position:relative;z-index:1;
+  max-width:800px;margin:0 auto;
+  padding:3rem 2rem 2rem;text-align:center;
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.45rem;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);
+  color:var(--accent);font-size:.7rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:.3rem .9rem;border-radius:100px;margin-bottom:1.2rem;
+  font-family:'Fira Code',monospace;
+}
+.eyebrow::before{content:'●';font-size:.45rem;animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1{
+  font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;
+  line-height:1.08;letter-spacing:-0.05em;margin-bottom:.6rem;
+}
+h1 em{font-style:normal;color:var(--accent)}
+.sub{color:var(--muted);font-size:.9rem;line-height:1.7;max-width:440px;margin:0 auto}
+
+/* ── MAIN WRAP ── */
+.main{
+  position:relative;z-index:1;
+  max-width:800px;margin:0 auto;
+  padding:0 1.5rem 5rem;
+}
+
+/* ── FORM CARD (same style as .lc in hr_login) ── */
+.fc{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.4);
+}
+.fc-bar{height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+/* ── SECTIONS ── */
+.section{padding:1.8rem 2rem;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.sec-head{
+  font-family:'Fira Code',monospace;font-size:.65rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--muted);
+  display:flex;align-items:center;gap:.7rem;margin-bottom:1.4rem;
+}
+.sec-head::before{
+  content:attr(data-n);width:22px;height:22px;border-radius:50%;
+  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--accent);flex-shrink:0;
+}
+.sec-head::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── GRID ── */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+@media(max-width:560px){.fg{grid-template-columns:1fr}}
+
+/* ── FIELD — matches .f in hr_login ── */
+.f{display:flex;flex-direction:column;gap:.4rem}
+.f label{
+  font-family:'Fira Code',monospace;font-size:.65rem;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+}
+.f select{
+  background:rgba(255,255,255,.04);border:1.5px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-family:'Sora',sans-serif;font-size:.88rem;
+  padding:.68rem 2.2rem .68rem 1rem;width:100%;
+  appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%235a6a88' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .9rem center;
+  transition:border-color .2s,box-shadow .2s;
+}
+.f select:focus{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(79,142,247,.15);
+}
+.f select.err{border-color:var(--red)!important}
+.f select option{background:#1a2035;color:var(--text)}
+
+/* ── SLIDERS ── */
+.sw{display:flex;flex-direction:column;gap:.45rem}
+.sh{display:flex;justify-content:space-between;align-items:center}
+.sh label{
+  font-family:'Fira Code',monospace;font-size:.65rem;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+}
+.sv{
+  font-family:'Fira Code',monospace;font-size:.8rem;font-weight:500;
+  color:var(--accent);background:rgba(79,142,247,.1);
+  border:1px solid rgba(79,142,247,.2);
+  border-radius:6px;padding:.1rem .55rem;min-width:30px;text-align:center;
+  transition:transform .15s;
+}
+input[type=range]{
+  -webkit-appearance:none;height:4px;border-radius:4px;
+  outline:none;cursor:pointer;width:100%;background:var(--border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  background:var(--accent);border-radius:50%;
+  box-shadow:0 0 10px rgba(79,142,247,.6);cursor:pointer;
+  transition:transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.ticks{display:flex;justify-content:space-between;font-size:.6rem;color:var(--muted)}
+
+/* ── PRIVACY NOTE ── */
+.privacy{
+  background:rgba(61,255,160,.05);border:1px solid rgba(61,255,160,.15);
+  border-radius:9px;padding:.9rem 1.1rem;
+  font-size:.78rem;color:#a0f0c8;line-height:1.6;
+  display:flex;gap:.6rem;align-items:flex-start;
+}
+.privacy b{color:var(--green)}
+
+/* ── SUBMIT BUTTON (same style as .btn-login) ── */
+.sub-wrap{padding:1.8rem 2rem}
+.btn-sub{
+  width:100%;
+  background:linear-gradient(135deg,var(--accent),#2563eb);
+  color:#fff;border:none;border-radius:10px;
+  font-family:'Sora',sans-serif;font-size:.95rem;font-weight:700;
+  padding:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:.6rem;
+  transition:transform .15s,box-shadow .2s;
+}
+.btn-sub:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(79,142,247,.35)}
+.btn-sub:active{transform:translateY(0)}
+.btn-sub:disabled{opacity:.5;cursor:not-allowed}
+.hint{text-align:center;margin-top:.9rem;font-size:.75rem;color:var(--muted)}
+.hint b{color:var(--accent2)}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:2rem;right:2rem;z-index:9999;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:.85rem 1.2rem;font-size:.83rem;
+  max-width:270px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  transform:translateY(70px);opacity:0;
+  transition:all .3s cubic-bezier(.22,1,.36,1);pointer-events:none;
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.err{border-color:rgba(255,95,109,.35);color:var(--red)}
+#toast.ok{border-color:rgba(61,255,160,.3);color:var(--green)}
+/* ── TEXT INPUT (for name/ID) ── */
+.f input[type=text]{
+  background:rgba(255,255,255,.04);border:1.5px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-family:'Sora',sans-serif;font-size:.88rem;
+  padding:.68rem 1rem;width:100%;
+  transition:border-color .2s,box-shadow .2s;
+}
+.f input[type=text]:focus{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(79,142,247,.15);
+}
+.f input[type=text].err{border-color:var(--red)!important}
+.f input[type=text]::placeholder{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="top-bar">
+  <div class="logo">Gig<span>Pulse</span></div>
+  <div class="step-row">
+    <div class="stp on">1</div>
+    <div class="stp-line"></div>
+    <div class="stp">2</div>
+    <div class="stp-line"></div>
+    <div class="stp lock">🔒</div>
+  </div>
+  <div class="role-tag">Employee Portal</div>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">Worker Self-Assessment · Step 1 of 2</div>
+  <h1>Your Gig Work <em>Profile</em></h1>
+  <p class="sub">Complete this honest survey. Responses are confidential — prediction results are only visible to authorised HR/Admin.</p>
+</div>
+
+<div class="main">
+  <div class="fc">
+    <div class="fc-bar"></div>
+
+    <!-- S0: Identity -->
+    <div class="section">
+      <div class="sec-head" data-n="00">Employee Identity</div>
+      <div class="fg">
+        <div class="f">
+          <label>Employee Name</label>
+          <input type="text" name="employee_name" placeholder="Enter your full name"/>
+        </div>
+        <div class="f">
+          <label>Employee ID</label>
+          <input type="text" name="employee_id" placeholder="e.g. EMP-001"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- S1: Schedule -->
+    <div class="section">
+      <div class="sec-head" data-n="01">Work Schedule & Hours</div>
+      <div class="fg">
+        <div class="f"><label>Age Group</label>
+          <select name="age_group"><option value="">— Select —</option><option>18-22</option><option>23-27</option><option>28-35</option><option>36-49</option></select></div>
+        <div class="f"><label>Avg Work Hours Per Day</label>
+          <select name="avg_work_hours_per_day"><option value="">— Select —</option><option>4-6 hours</option><option>6-8 hours</option><option>Less than 4 hours</option><option>More than 8 hours</option></select></div>
+        <div class="f"><label>Days Worked Per Week</label>
+          <select name="days_worked_per_week"><option value="">— Select —</option><option>1-2</option><option>3-4</option><option>5-6</option><option>7</option></select></div>
+        <div class="f"><label>Preferred Time</label>
+          <select name="preferred_time"><option value="">— Select —</option><option>Afternoon</option><option>Evening</option><option>Flexible</option><option>Morning</option><option>Night</option></select></div>
+        <div class="f"><label>Work Days</label>
+          <select name="work_days"><option value="">— Select —</option><option>Both weekdays and weekends</option><option>Mostly weekdays</option><option>Mostly weekends</option></select></div>
+        <div class="f"><label>Weekly Target Completion</label>
+          <select name="weekly_target_completion"><option value="">— Select —</option><option>Almost Always</option><option>Never</option><option>Rarely</option><option>Sometimes</option></select></div>
+      </div>
+    </div>
+
+    <!-- S2: Background -->
+    <div class="section">
+      <div class="sec-head" data-n="02">Background & Experience</div>
+      <div class="fg">
+        <div class="f"><label>Employment Status Before Gig</label>
+          <select name="employment_status_before_gig"><option value="">— Select —</option><option>Retired</option><option>Student</option><option>Unemployed</option><option>Working Professional</option></select></div>
+        <div class="f"><label>Gig Experience</label>
+          <select name="gig_experience"><option value="">— Select —</option><option>3-6 months</option><option>6-12 months</option><option>Less than 3 months</option><option>More than 1 year</option></select></div>
+        <div class="f"><label>Highest Education</label>
+          <select name="highest_education"><option value="">— Select —</option><option>Diploma</option><option>Postgraduate degree (PG)</option><option>School Level</option><option>Undergraduate degree (UG)</option></select></div>
+        <div class="f"><label>Gig as Primary Income?</label>
+          <select name="gig_primary_income"><option value="">— Select —</option><option>I use it occasionally / on-demand</option><option>No this is my secondary job</option><option>Yes this is my primary job</option></select></div>
+        <div class="f"><label>Prefer Fixed Salary Job?</label>
+          <select name="prefer_fixed_salary_job"><option value="">— Select —</option><option>Depends on salary</option><option>No</option><option>Yes</option></select></div>
+        <div class="f"><label>Health Impact</label>
+          <select name="health_impact"><option value="">— Select —</option><option>Major issue</option><option>Minor issue</option><option>No issue</option></select></div>
+      </div>
+    </div>
+
+    <!-- S3: Earnings -->
+    <div class="section">
+      <div class="sec-head" data-n="03">Earnings & Vehicle</div>
+      <div class="fg">
+        <div class="f"><label>Weekly Earnings (₹)</label>
+          <select name="weekly_earnings"><option value="">— Select —</option><option>3000 - 6000</option><option>6000 - 10000</option><option>Above 10000</option><option>Below 3000</option></select></div>
+        <div class="f"><label>Vehicle Type</label>
+          <select name="vehicle_type"><option value="">— Select —</option><option>Bike</option><option>Cycle</option><option>Electric Vehicle</option></select></div>
+        <div class="f"><label>Vehicle Expense (₹/week)</label>
+          <select name="vehicle_expense"><option value="">— Select —</option><option>0</option><option>300-700</option><option>700-1200</option><option>Less than 300</option><option>More than 1200</option></select></div>
+        <div class="f"><label>Rain Incentive</label>
+          <select name="rain_incentive"><option value="">— Select —</option><option>No</option><option>Not applicable (do not work in rain)</option><option>Yes</option></select></div>
+      </div>
+    </div>
+
+    <!-- S4: Incentives -->
+    <div class="section">
+      <div class="sec-head" data-n="04">Incentives & Retention Intent</div>
+      <div class="fg">
+        <div class="f"><label>Festival Incentive</label>
+          <select name="festival_incentive"><option value="">— Select —</option><option>No</option><option>Not sure</option><option>Yes</option></select></div>
+        <div class="f"><label>Performance Incentive</label>
+          <select name="performance_incentive"><option value="">— Select —</option><option>Never</option><option>Rarely</option><option>Yes occasionally</option><option>Yes regularly</option></select></div>
+        <div class="f"><label>Incentive Contribution</label>
+          <select name="incentive_contribution"><option value="">— Select —</option><option>Low contribution</option><option>Moderate contribution</option><option>No incentives</option><option>Very high contribution</option></select></div>
+        <div class="f"><label>Stay Without Incentives?</label>
+          <select name="retention_if_no_incentive"><option value="">— Select —</option><option>No</option><option>Not sure</option><option>Yes</option></select></div>
+      </div>
+    </div>
+
+    <!-- S5: Sliders -->
+    <div class="section">
+      <div class="sec-head" data-n="05">Satisfaction Ratings (1 = Low · 5 = High)</div>
+      <div class="fg">
+        <div class="sw">
+          <div class="sh"><label>Incentive Motivation</label><span class="sv" id="sv_im">3</span></div>
+          <input type="range" id="sl_im" name="incentive_motivation" min="1" max="5" value="3" oninput="sl('im',this.value)"/>
+          <div class="ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        </div>
+        <div class="sw">
+          <div class="sh"><label>Job Satisfaction</label><span class="sv" id="sv_js">3</span></div>
+          <input type="range" id="sl_js" name="job_satisfaction" min="1" max="5" value="3" oninput="sl('js',this.value)"/>
+          <div class="ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        </div>
+        <div class="sw">
+          <div class="sh"><label>Delivery Reliability</label><span class="sv" id="sv_dr">3</span></div>
+          <input type="range" id="sl_dr" name="delivery_reliability" min="1" max="5" value="3" oninput="sl('dr',this.value)"/>
+          <div class="ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        </div>
+        <div class="sw">
+          <div class="sh"><label>Expense Impact on Income</label><span class="sv" id="sv_ei">3</span></div>
+          <input type="range" id="sl_ei" name="expense_impact_on_income" min="1" max="5" value="3" oninput="sl('ei',this.value)"/>
+          <div class="ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy -->
+    <div class="section" style="padding-top:1.2rem;padding-bottom:1.2rem">
+      <div class="privacy">
+        <span>🔒</span>
+        <span><b>Privacy Notice:</b> Your individual responses are never shared with supervisors. Only authorised HR/Admin personnel can access the ML prediction results.</span>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="sub-wrap">
+      <button class="btn-sub" id="subBtn" onclick="submitForm()">⚡ Submit My Profile</button>
+      <p class="hint">All fields required · <b>Results visible to HR/Admin only</b></p>
+    </div>
+  </div>
+</div>
+
+<script>
+function sl(k,v){
+  document.getElementById('sv_'+k).textContent=v;
+  const el=document.getElementById('sl_'+k);
+  const p=((v-1)/4)*100;
+  el.style.background=`linear-gradient(to right,var(--accent) ${p}%,var(--border) ${p}%)`;
+  const sv=document.getElementById('sv_'+k);
+  sv.style.transform='scale(1.25)';
+  setTimeout(()=>sv.style.transform='scale(1)',160);
+}
+['im','js','dr','ei'].forEach(k=>sl(k,3));
+
+async function submitForm(){
+  const payload={};let errs=0;
+
+  // Clear previous errors
+  document.querySelectorAll('.err').forEach(e=>e.classList.remove('err'));
+
+  // Collect text inputs (name, employee_id)
+  document.querySelectorAll('input[type=text]').forEach(el=>{
+    if(!el.value.trim()){el.classList.add('err');errs++;}
+    else payload[el.name]=el.value.trim();
+  });
+
+  // Collect selects
+  document.querySelectorAll('select').forEach(el=>{
+    if(!el.value){el.classList.add('err');errs++;}
+    else payload[el.name]=el.value;
+  });
+
+  // Collect sliders
+  [['im','incentive_motivation'],['js','job_satisfaction'],
+   ['dr','delivery_reliability'],['ei','expense_impact_on_income']].forEach(([k,n])=>{
+    payload[n]=parseInt(document.getElementById('sl_'+k).value);
+  });
+
+  if(errs){
+    toast(`⚠️ ${errs} field${errs>1?'s':''} empty — please fill all fields`,true);
+    document.querySelector('.err')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  const btn=document.getElementById('subBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span style="display:inline-block;animation:sp .7s linear infinite">⟳</span> Submitting…';
+
+  try{
+    const res=await fetch('/submit_form',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(!res.ok||data.error) throw new Error(data.error||'Submission failed');
+
+    // Save for thank-you page display
+    sessionStorage.setItem('workerPayload',JSON.stringify({
+      ...payload,
+      _worker_id:data.worker_id,
+      _submitted_at:new Date().toISOString(),
+      _fields:data.fields
+    }));
+    sessionStorage.setItem('lastWorkerId',data.worker_id);
+
+    setTimeout(()=>{window.location.href='/thankyou';},600);
+
+  }catch(e){
+    toast('❌ Error: '+e.message,true);
+    btn.disabled=false;
+    btn.innerHTML='⚡ Submit My Profile';
+  }
+}
+
+function toast(msg,isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show '+(isErr?'err':'ok');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',3800);
+}
+</script>
+</body>
+</html>

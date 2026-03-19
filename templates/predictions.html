@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GigPulse — HR Prediction Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --bg:#0a0d16;--surface:#111827;--card:#161f32;
+  --border:#1e2d45;--accent:#4f8ef7;--accent2:#f7c94f;
+  --text:#e8eaf4;--muted:#5a6a88;
+  --green:#3dffa0;--red:#ff5f6d;--yellow:#ffd166;--r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(79,142,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+body::after{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 60% 50% at 80% 10%,rgba(79,142,247,.06),transparent 60%);pointer-events:none}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);background:rgba(10,13,22,.9);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:1.15rem;font-weight:800;letter-spacing:-0.04em}.logo span{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.role-tag{background:rgba(247,201,79,.1);color:var(--accent2);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .9rem;border-radius:100px;border:1px solid rgba(247,201,79,.25);font-family:'Fira Code',monospace}
+.logout{font-size:.75rem;color:var(--muted);cursor:pointer;transition:color .2s;background:none;border:none;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:.3rem}
+.logout:hover{color:var(--red)}
+
+/* ── HEADER ── */
+.header{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:2.5rem 1.5rem 1.5rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.header-left{}
+.eyebrow{font-family:'Fira Code',monospace;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.6rem}
+h1{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;line-height:1.1;letter-spacing:-0.04em}
+h1 em{font-style:normal;color:var(--accent)}
+.worker-id{font-family:'Fira Code',monospace;font-size:.75rem;color:var(--muted);margin-top:.4rem}
+.worker-id b{color:var(--accent2)}
+.print-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Sora',sans-serif;font-size:.82rem;font-weight:600;padding:.6rem 1.2rem;cursor:pointer;transition:border-color .2s;display:flex;align-items:center;gap:.4rem}
+.print-btn:hover{border-color:var(--accent)}
+
+/* ── MAIN ── */
+.main{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 1.5rem 5rem}
+
+/* ── VERDICT ── */
+.verdict{border-radius:var(--r);padding:2.2rem 2rem;margin-bottom:1.8rem;border:1px solid;position:relative;overflow:hidden}
+.verdict.retain{background:rgba(61,255,160,.04);border-color:rgba(61,255,160,.25)}
+.verdict.leave{background:rgba(255,95,109,.04);border-color:rgba(255,95,109,.25)}
+.verdict.maybe{background:rgba(255,209,102,.04);border-color:rgba(255,209,102,.25)}
+.verdict::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 70% at 0% 50%,rgba(61,255,160,.06),transparent 60%)}
+.verdict.leave::before{background:radial-gradient(ellipse 50% 70% at 0% 50%,rgba(255,95,109,.06),transparent 60%)}
+.verdict.maybe::before{background:radial-gradient(ellipse 50% 70% at 0% 50%,rgba(255,209,102,.06),transparent 60%)}
+
+.v-inner{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;position:relative;z-index:1}
+.v-emoji{font-size:3.5rem;line-height:1;animation:bounce 2.5s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.v-text{}
+.v-label{font-size:clamp(1.4rem,3vw,2rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.3rem}
+.retain .v-label{color:var(--green)}.leave .v-label{color:var(--red)}.maybe .v-label{color:var(--yellow)}
+.v-sub{color:var(--muted);font-size:.9rem;line-height:1.6;max-width:360px}
+.v-conf{margin-left:auto;text-align:center;flex-shrink:0}
+.conf-ring{width:100px;height:100px;position:relative}
+.conf-pct{font-size:1.5rem;font-weight:800;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1.1}
+.retain .conf-pct span:first-child{color:var(--green)}.leave .conf-pct span:first-child{color:var(--red)}.maybe .conf-pct span:first-child{color:var(--yellow)}
+.conf-pct .cl{font-size:.6rem;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-bottom:1.4rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.4rem;margin-bottom:1.4rem}
+@media(max-width:720px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.7rem;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .3s}
+.card:hover::before{opacity:1}
+.ct{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-family:'Fira Code',monospace;margin-bottom:1.3rem;display:flex;align-items:center;gap:.5rem}
+
+/* Model result boxes */
+.model-box{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:1.2rem;text-align:center}
+.mb-icon{font-size:1.8rem;margin-bottom:.4rem}
+.mb-name{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.4rem;font-family:'Fira Code',monospace}
+.mb-res{font-size:1.1rem;font-weight:800;letter-spacing:-0.02em}
+.mb-res.yes{color:var(--green)}.mb-res.no{color:var(--red)}.mb-res.maybe{color:var(--yellow)}
+
+/* cluster */
+.cluster-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border-radius:100px;font-weight:800;font-size:.95rem}
+.cluster-badge.low{background:rgba(61,255,160,.1);border:1px solid rgba(61,255,160,.3);color:var(--green)}
+.cluster-badge.medium{background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.3);color:var(--yellow)}
+.cluster-badge.high{background:rgba(255,95,109,.1);border:1px solid rgba(255,95,109,.3);color:var(--red)}
+.cluster-desc{color:var(--muted);font-size:.82rem;line-height:1.6;margin-top:.8rem}
+
+/* prob bars */
+.prob-item{margin-bottom:1rem}
+.prob-head{display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:.4rem}
+.prob-pct{font-weight:700}
+.prob-track{background:var(--surface);border-radius:5px;height:8px;overflow:hidden}
+.prob-fill{height:100%;border-radius:5px;width:0;transition:width 1.3s cubic-bezier(.22,1,.36,1)}
+
+/* chart */
+.ch-wrap{position:relative;height:260px}
+
+/* risk factors */
+.risk-list{display:flex;flex-direction:column;gap:.8rem}
+.ri{display:flex;align-items:flex-start;gap:.9rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;transition:border-color .2s}
+.ri.pos{border-left:3px solid var(--green)}.ri.neg{border-left:3px solid var(--red)}.ri.neu{border-left:3px solid var(--yellow)}
+.ri-icon{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.ri-title{font-size:.86rem;font-weight:700;margin-bottom:.2rem}
+.ri-detail{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+/* recommendations */
+.rec-list{display:flex;flex-direction:column;gap:.8rem}
+.rec{display:flex;align-items:flex-start;gap:.9rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.1rem}
+.rn{width:26px;height:26px;border-radius:50%;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);color:var(--accent);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rt{font-size:.83rem;line-height:1.55;color:var(--text)}
+.rt b{color:var(--accent)}
+
+/* worker profile */
+.p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+@media(max-width:560px){.p-grid{grid-template-columns:1fr 1fr}}
+.pi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem}
+.pi-k{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.2rem;font-family:'Fira Code',monospace}
+.pi-v{font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── SUBMISSION ROW ── */
+.sub-row{
+  display:flex;align-items:center;gap:1rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:.8rem 1.1rem;cursor:pointer;
+  transition:border-color .2s;flex-wrap:wrap;
+}
+.sub-row:hover{border-color:var(--accent)}
+.sub-row.active{border-color:var(--accent);background:rgba(79,142,247,.06)}
+.sub-emp{font-weight:700;font-size:.88rem;min-width:120px}
+.sub-id{font-family:'Fira Code',monospace;font-size:.72rem;color:var(--accent)}
+.sub-time{font-size:.75rem;color:var(--muted);margin-left:auto}
+.sub-badge{font-size:.72rem;font-weight:700;padding:.2rem .7rem;border-radius:100px}
+.sub-badge.yes{background:rgba(61,255,160,.12);color:var(--green);border:1px solid rgba(61,255,160,.3)}
+.sub-badge.no{background:rgba(255,95,109,.12);color:var(--red);border:1px solid rgba(255,95,109,.3)}
+.sub-badge.maybe{background:rgba(255,209,102,.12);color:var(--yellow);border:1px solid rgba(255,209,102,.3)}display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:2rem}
+.btn{padding:.8rem 1.8rem;border-radius:10px;font-family:'Sora',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;border:none;transition:transform .15s,box-shadow .2s;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem}
+.btn:hover{transform:translateY(-2px)}
+.btn-p{background:linear-gradient(135deg,var(--accent),#2563eb);color:#fff}
+.btn-p:hover{box-shadow:0 8px 24px rgba(79,142,247,.35)}
+.btn-g{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-g:hover{border-color:var(--accent)}
+
+/* access denied */
+#denied{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;padding:2rem}
+#denied h2{font-size:1.6rem;font-weight:800;color:var(--red)}
+#denied p{color:var(--muted);max-width:320px;line-height:1.6}
+#denied a{color:var(--accent);font-size:.9rem}
+</style>
+</head>
+<body>
+
+<!-- Access denied screen (shown if not logged in) -->
+<div id="denied" style="display:none">
+  <div style="font-size:3rem">🔒</div>
+  <h2>Access Restricted</h2>
+  <p>This dashboard is for authorised HR/Admin personnel only. Please log in with your credentials.</p>
+  <a href="/hr_login">→ Go to HR Login</a>
+</div>
+
+<nav>
+  <div class="logo">Gig<span>Pulse</span></div>
+  <div class="nav-right">
+    <div class="role-tag">HR/Admin Dashboard</div>
+    <button class="logout" onclick="logout()">⏻ Logout</button>
+  </div>
+</nav>
+
+<div class="header">
+  <div class="header-left">
+    <div class="eyebrow">ML Prediction Report · Confidential</div>
+    <h1>Worker Retention <em>Analysis</em></h1>
+    <div class="worker-id">Viewing: <b id="wid">—</b> · <b id="empName">—</b> · Generated: <b id="genTime">—</b></div>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
+</div>
+
+<div class="main">
+
+  <!-- SUBMISSIONS LIST -->
+  <div class="card" id="submissionsCard" style="margin-bottom:1.8rem">
+    <div class="ct" style="display:flex;align-items:center;justify-content:space-between">
+      <span>📋 All Submissions <span id="subCount" style="color:var(--muted);font-weight:400"></span></span>
+      <button onclick="loadSubmissions()" style="background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);color:var(--accent);font-size:.72rem;font-weight:700;padding:.3rem .8rem;border-radius:6px;cursor:pointer;font-family:'Sora',sans-serif">↻ Refresh</button>
+    </div>
+    <div id="subList" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem">
+      <div style="color:var(--muted);font-size:.85rem">Loading submissions…</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict" id="verdictEl">
+    <div class="v-inner">
+      <div class="v-emoji" id="vEmoji">⏳</div>
+      <div class="v-text">
+        <div class="v-label" id="vLabel">Analysing…</div>
+        <div class="v-sub" id="vSub">Running prediction models</div>
+      </div>
+      <div class="v-conf">
+        <div class="conf-ring">
+          <canvas id="donutChart" width="100" height="100"></canvas>
+          <div class="conf-pct"><span id="confPct">—</span><span class="cl">Confidence</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL RESULTS -->
+  <div class="g3">
+    <div class="card">
+      <div class="ct">⚡ XGBoost — Primary</div>
+      <div class="model-box"><div class="mb-icon">⚡</div><div class="mb-name">XGBoost Prediction</div><div class="mb-res" id="xgbR">—</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">🌲 Random Forest</div>
+      <div class="model-box"><div class="mb-icon">🌿</div><div class="mb-name">RF Ensemble Vote</div><div class="mb-res" id="rfR">—</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">👥 KMeans Cluster</div>
+      <div class="model-box" style="display:flex;flex-direction:column;align-items:center">
+        <div class="mb-icon">🔵</div>
+        <div class="mb-name">Risk Segment</div>
+        <div id="clBadge">—</div>
+        <div class="cluster-desc" id="clDesc"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROB + CHART -->
+  <div class="g2">
+    <div class="card">
+      <div class="ct">📊 Probability Breakdown</div>
+      <div id="probList"></div>
+    </div>
+    <div class="card">
+      <div class="ct">📈 Feature Importance (XGBoost)</div>
+      <div class="ch-wrap"><canvas id="featChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RISK + RECS -->
+  <div class="g2">
+    <div class="card">
+      <div class="ct">⚠️ Risk Factor Analysis</div>
+      <div class="risk-list" id="riskList"></div>
+    </div>
+    <div class="card">
+      <div class="ct">💡 HR Action Recommendations</div>
+      <div class="rec-list" id="recList"></div>
+    </div>
+  </div>
+
+  <!-- WORKER PROFILE -->
+  <div class="card" style="margin-bottom:0">
+    <div class="ct">👤 Submitted Worker Profile</div>
+    <div class="p-grid" id="profGrid"></div>
+  </div>
+
+  <div class="action-row">
+    <a href="/" class="btn btn-p">← Review Another Worker</a>
+    <button class="btn btn-g" onclick="copyReport()">📋 Copy Summary</button>
+    <button class="btn btn-g" onclick="window.print()">🖨️ Print</button>
+  </div>
+</div>
+
+<script>
+// ─── AUTH GUARD ────────────────────────────────────────────────────────────────
+// Flask already protects /predictions at the route level.
+// This JS guard is a secondary UI check using the flag set by hr_login.html.
+async function checkAuth() {
+  // Primary: sessionStorage flag set on successful login
+  if (sessionStorage.getItem('hr_auth') === '1') return true;
+
+  // Fallback: ask Flask if session cookie is valid
+  try {
+    const res = await fetch('/hr_status');
+    const data = await res.json();
+    if (data.authenticated) {
+      sessionStorage.setItem('hr_auth', '1'); // sync local flag
+      return true;
+    }
+  } catch(e) { /* Flask unreachable */ }
+
+  // Not authenticated — show denied screen
+  document.getElementById('denied').style.display = 'flex';
+  document.querySelector('nav').style.display = 'none';
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  return false;
+}
+
+function logout() {
+  sessionStorage.removeItem('hr_auth');
+  window.location.href = '/hr_logout';
+}
+
+// ─── RISK FACTORS (derived from submitted payload) ────────────────────────────
+function buildRisks(p, pred) {
+  const f = [];
+  const sat = parseInt(p.job_satisfaction)||3;
+  if (sat >= 4) f.push({t:'pos',icon:'😊',title:`High Job Satisfaction (${sat}/5)`,detail:'Strong retention signal. Worker is content with current role.'});
+  else if (sat <= 2) f.push({t:'neg',icon:'😟',title:`Low Job Satisfaction (${sat}/5)`,detail:'Critical attrition risk. Address root cause immediately.'});
+
+  if ((p.retention_if_no_incentive||'')==='No')
+    f.push({t:'neg',icon:'💸',title:'Incentive Dependent',detail:'Worker explicitly states they would leave without incentives — vulnerable.'});
+  else if ((p.retention_if_no_incentive||'')==='Yes')
+    f.push({t:'pos',icon:'💪',title:'Intrinsically Motivated',detail:'Worker would stay even without incentives — strong loyalty signal.'});
+
+  if ((p.prefer_fixed_salary_job||'')==='Yes')
+    f.push({t:'neg',icon:'🏢',title:'Prefers Fixed Employment',detail:'Worker is actively considering leaving for a salaried role.'});
+
+  if ((p.health_impact||'')==='Major issue')
+    f.push({t:'neg',icon:'🏥',title:'Health Issues Reported',detail:'Physical health problems directly increase dropout risk.'});
+  else if ((p.health_impact||'')==='No issue')
+    f.push({t:'pos',icon:'💚',title:'No Health Concerns',detail:'Worker reports no health impact — sustainable engagement.'});
+
+  if ((p.gig_experience||'').includes('More than 1'))
+    f.push({t:'pos',icon:'📅',title:'Experienced Worker (1+ year)',detail:'Long tenure signals platform adaptation and reduced churn risk.'});
+  else if ((p.gig_experience||'').includes('Less than'))
+    f.push({t:'neg',icon:'🆕',title:'Very New Worker (<3 months)',detail:'Early-phase workers have highest dropout risk. Onboarding support critical.'});
+
+  if ((p.weekly_target_completion||'')==='Almost Always')
+    f.push({t:'pos',icon:'🎯',title:'High Target Completion',detail:'Consistent delivery performance correlates with longer platform tenure.'});
+  else if ((p.weekly_target_completion||'')==='Never')
+    f.push({t:'neg',icon:'⚠️',title:'Never Meets Targets',detail:'Consistently missing targets may indicate burnout or disengagement.'});
+
+  if (f.length===0) f.push({t:'neu',icon:'📊',title:'No Dominant Factors',detail:'No single strong signal detected. Monitor all metrics closely.'});
+  return f;
+}
+
+// ─── RECOMMENDATIONS ──────────────────────────────────────────────────────────
+function buildRecs(p, pred) {
+  const list = [];
+  if (pred==='No'||pred==='Not sure')
+    list.push('Schedule a 1:1 check-in within 7 days to identify specific pain points.');
+  if ((p.prefer_fixed_salary_job||'')==='Yes')
+    list.push('Explore guaranteed minimum earnings structures to reduce appeal of fixed-salary alternatives.');
+  if ((p.festival_incentive||'')==='No')
+    list.push('Enrol worker in the seasonal bonus program. Festival incentives show 28% higher retention in Q3/Q4.');
+  if ((p.performance_incentive||'').includes('Never')||(p.performance_incentive||'').includes('Rarely'))
+    list.push('Worker rarely receives performance incentives. Review thresholds — they may be unachievable.');
+  if ((p.health_impact||'')==='Major issue')
+    list.push('Connect worker with platform health support. Physical concerns unaddressed lead to abrupt exits.');
+  if (pred==='Yes')
+    list.push('Worker is likely to retain. Nominate for a loyalty milestone reward to reinforce commitment.');
+  list.push('Implement monthly automated check-in surveys. Data-driven monitoring reduces attrition by ~22%.');
+  return list.slice(0,5);
+}
+
+// ─── DONUT CHART ──────────────────────────────────────────────────────────────
+function drawDonut(pct, color) {
+  const cv=document.getElementById('donutChart');
+  const ctx=cv.getContext('2d');
+  const r=40,cx=50,cy=50,start=-Math.PI/2;
+  ctx.clearRect(0,0,100,100);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=8;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,r,start,start+(pct/100)*2*Math.PI);
+  ctx.strokeStyle=color;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+  document.getElementById('confPct').innerHTML=`<span>${pct}%</span><span class="cl">Confidence</span>`;
+}
+
+// ─── RENDER RESULTS FROM FLASK /predict ──────────────────────────────────────
+function render(data, payload) {
+  const cfg = {
+    'Yes':      {cls:'retain',emoji:'✅',label:'WILL RETAIN',sub:'This worker is predicted to continue gig work. Maintain current support levels.'},
+    'No':       {cls:'leave', emoji:'🚨',label:'WILL LEAVE', sub:'High attrition risk detected. Immediate HR intervention recommended.'},
+    'Not sure': {cls:'maybe', emoji:'⚠️',label:'UNCERTAIN',  sub:'Borderline prediction. Proactive engagement advised within 2 weeks.'},
+  };
+  const c = cfg[data.prediction] || cfg['Not sure'];
+  const colorMap = {retain:'#3dffa0',leave:'#ff5f6d',maybe:'#ffd166'};
+
+  // Verdict banner
+  const ve=document.getElementById('verdictEl');
+  ve.className='verdict '+c.cls;
+  document.getElementById('vEmoji').textContent=c.emoji;
+  document.getElementById('vLabel').textContent=c.label;
+  document.getElementById('vSub').textContent=c.sub;
+  setTimeout(()=>drawDonut(data.confidence, colorMap[c.cls]||'#4f8ef7'), 300);
+
+  // Model result boxes
+  const cc=v=>v==='Yes'?'yes':v==='No'?'no':'maybe';
+  document.getElementById('xgbR').textContent=data.prediction;
+  document.getElementById('xgbR').className='mb-res '+cc(data.prediction);
+  document.getElementById('rfR').textContent=data.rf_prediction;
+  document.getElementById('rfR').className='mb-res '+cc(data.rf_prediction);
+
+  // KMeans cluster badge
+  const risk=data.risk_cluster||'Unknown';
+  const clsCls = risk.includes('Low')?'low':risk.includes('High')?'high':'medium';
+  const clsDesc = risk.includes('Low')
+    ? 'Strong retention signals detected. Focus on maintaining satisfaction.'
+    : risk.includes('High')
+    ? 'High attrition probability. Immediate HR intervention is strongly advised.'
+    : 'Mixed signals. Proactive engagement recommended within 30 days.';
+  document.getElementById('clBadge').outerHTML=`<div id="clBadge" class="cluster-badge ${clsCls}">${risk}</div>`;
+  document.getElementById('clDesc').textContent=clsDesc;
+
+  // Probability bars
+  const pColors={'Yes':'var(--green)','No':'var(--red)','Not sure':'var(--yellow)'};
+  const pl=document.getElementById('probList');pl.innerHTML='';
+  Object.entries(data.probabilities).forEach(([k,v])=>{
+    pl.innerHTML+=`<div class="prob-item"><div class="prob-head"><span>${k}</span><span class="prob-pct" style="color:${pColors[k]||'var(--accent)'}">${v}%</span></div><div class="prob-track"><div class="prob-fill" style="background:${pColors[k]||'var(--accent)'}" data-w="${v}"></div></div></div>`;
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.prob-fill').forEach(b=>b.style.width=b.dataset.w+'%');
+  }));
+
+  // Feature importance chart — from /feature_importance endpoint
+  fetch('/feature_importance').then(r=>r.json()).then(fi=>{
+    new Chart(document.getElementById('featChart').getContext('2d'),{
+      type:'bar',
+      data:{labels:fi.labels,datasets:[{label:'Importance %',data:fi.values,
+        backgroundColor:fi.labels.map((_,i)=>`hsla(${210-i*13},75%,60%,.75)`),
+        borderColor:fi.labels.map((_,i)=>`hsl(${210-i*13},75%,60%)`),
+        borderWidth:1,borderRadius:5}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#5a6a88',font:{size:10}},grid:{color:'#1e2d45'}},
+                y:{ticks:{color:'#e8eaf4',font:{size:10}},grid:{display:false}}}}
+    });
+  });
+
+  // Risk factors
+  const rl=document.getElementById('riskList');
+  buildRisks(payload, data.prediction).forEach(f=>{
+    rl.innerHTML+=`<div class="ri ${f.t}"><div class="ri-icon">${f.icon}</div><div><div class="ri-title">${f.title}</div><div class="ri-detail">${f.detail}</div></div></div>`;
+  });
+
+  // Recommendations
+  const rc=document.getElementById('recList');
+  buildRecs(payload, data.prediction).forEach((t,i)=>{
+    rc.innerHTML+=`<div class="rec"><div class="rn">${i+1}</div><div class="rt">${t}</div></div>`;
+  });
+
+  // Worker profile snapshot
+  const pg=document.getElementById('profGrid');
+  const skip=['_submitted_at','_worker_id'];
+  Object.entries(payload).filter(([k])=>!skip.includes(k)).slice(0,18).forEach(([k,v])=>{
+    const label=k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    pg.innerHTML+=`<div class="pi"><div class="pi-k">${label}</div><div class="pi-v" title="${v}">${v}</div></div>`;
+  });
+
+  // Header IDs
+  document.getElementById('wid').textContent=payload._worker_id||'UNKNOWN';
+  document.getElementById('genTime').textContent=new Date().toLocaleString([],{dateStyle:'medium',timeStyle:'short'});
+}
+
+// ─── COPY REPORT ──────────────────────────────────────────────────────────────
+function copyReport(){
+  const pred=document.getElementById('vLabel').textContent;
+  const conf=document.getElementById('confPct').innerText.replace('\nConfidence','');
+  const cl=document.querySelector('.cluster-badge')?.textContent||'—';
+  const wid=document.getElementById('wid').textContent;
+  navigator.clipboard.writeText(
+    `GigPulse HR Report\nWorker ID: ${wid}\nPrediction: ${pred}\nConfidence: ${conf}\nRisk Cluster: ${cl}\nGenerated: ${new Date().toLocaleString()}`
+  ).then(()=>alert('Report summary copied to clipboard.'));
+}
+
+//  INIT 
+(async () => {
+  const authed = await checkAuth();
+  if (!authed) return;
+
+  // Load all submissions from Flask
+  await loadSubmissions();
+})();
+
+// LOAD SUBMISSIONS LIST
+async function loadSubmissions() {
+  const subList  = document.getElementById('subList');
+  const subCount = document.getElementById('subCount');
+  subList.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Loading…</div>';
+
+  try {
+    const res  = await fetch('/get_submissions');
+    const list = await res.json();
+
+    if (list.error) throw new Error(list.error);
+
+    if (!list.length) {
+      subList.innerHTML =
+        '<div style="color:var(--muted);font-size:.85rem;padding:.5rem 0">' +
+        'No submissions yet. Ask employees to fill the form at ' +
+        '<b style="color:var(--accent)">http://127.0.0.1:5000/</b></div>';
+      subCount.textContent = '';
+      return;
+    }
+
+    subCount.textContent = `(${list.length} record${list.length>1?'s':''})`;
+    subList.innerHTML = '';
+
+    list.forEach((s, i) => {
+      const badgeCls = s.prediction==='Yes'?'yes':s.prediction==='No'?'no':'maybe';
+      const row = document.createElement('div');
+      row.className   = 'sub-row' + (i===0 ? ' active' : '');
+      row.dataset.wid = s.worker_id;
+      row.innerHTML   = `
+        <div style="display:flex;flex-direction:column;gap:.2rem;min-width:140px">
+          <div class="sub-emp">${s.employee_name||'—'}</div>
+          <div class="sub-id">${s.employee_id||'—'}</div>
+        </div>
+        <div class="sub-id" style="font-size:.7rem">${s.worker_id}</div>
+        <span class="sub-badge ${badgeCls}">${s.prediction}</span>
+        <div style="font-size:.75rem;color:var(--muted)">${s.confidence}% conf.</div>
+        <div class="sub-time" style="margin-left:auto">${s.submitted_at}</div>
+        <button onclick="deleteSubmission(event,'${s.worker_id}')"
+          style="background:rgba(255,95,109,.1);border:1px solid rgba(255,95,109,.25);
+                 color:var(--red);font-size:.68rem;padding:.25rem .6rem;
+                 border-radius:6px;cursor:pointer;font-family:'Sora',sans-serif;flex-shrink:0">
+          🗑 Delete
+        </button>`;
+      row.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        document.querySelectorAll('.sub-row').forEach(r=>r.classList.remove('active'));
+        row.classList.add('active');
+        loadDetail(s.worker_id);
+      });
+      subList.appendChild(row);
+    });
+
+    // Auto-load most recent
+    if (list.length > 0) loadDetail(list[0].worker_id);
+
+  } catch(e) {
+    subList.innerHTML =
+      '<div style="color:var(--red);font-size:.85rem">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+//DELETE SUBMISSION 
+async function deleteSubmission(e, workerId) {
+  e.stopPropagation();
+  if (!confirm(`Delete submission ${workerId}? This cannot be undone.`)) return;
+  try {
+    const res = await fetch('/delete_submission/' + workerId, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      await loadSubmissions();
+    }
+  } catch(err) {
+    alert('Delete failed: ' + err.message);
+  }
+}
+
+// LOAD SINGLE SUBMISSION DETAIL
+async function loadDetail(workerId) {
+  try {
+    const res = await fetch('/get_submission/' + workerId);
+    const rec = await res.json();
+    if (rec.error) throw new Error(rec.error);
+    render(rec.result, rec.payload);
+    document.getElementById('wid').textContent = rec.worker_id;
+    document.getElementById('empName').textContent =
+      (rec.employee_name || '') + (rec.employee_id ? ' · ' + rec.employee_id : '');
+    document.getElementById('genTime').textContent = rec.submitted_at;
+  } catch(e) {
+    document.getElementById('wid').textContent = 'Error: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
