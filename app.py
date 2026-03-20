@@ -150,7 +150,7 @@ def run_prediction(data):
     
     if yes_prob >= 0.70:
       xgb_label = "Will Retain"
-    elif no_prob >= 0.65:
+    elif no_prob >= 0.60:
       xgb_label = "Will Leave"
     else:
       xgb_label = "Uncertain"
