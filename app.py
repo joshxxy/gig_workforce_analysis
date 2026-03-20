@@ -147,11 +147,10 @@ def run_prediction(data):
     xgb_proba = xgb_model.predict_proba(row_array)[0]
     yes_prob = float(xgb_proba[1])
     no_prob  = float(xgb_proba[0])
-    yes_prob = float(xgb_proba[1])
-    no_prob  = float(xgb_proba[0])
-    if yes_prob >= 0.75:
+    
+    if yes_prob >= 0.70:
       xgb_label = "Will Retain"
-    elif yes_prob <= 0.50:
+    elif no_prob >= 0.65:
       xgb_label = "Will Leave"
     else:
       xgb_label = "Uncertain"
