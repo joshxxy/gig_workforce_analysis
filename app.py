@@ -374,3 +374,6 @@ if __name__ == "__main__":
     print("=" * 55)
 if __name__ == "__main__":
     app.run(debug=True)
+@app.route("/ping")
+def ping():
+    return "OK"
