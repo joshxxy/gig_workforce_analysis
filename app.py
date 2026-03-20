@@ -145,7 +145,14 @@ def run_prediction(data):
     # Run models 
     xgb_idx   = int(xgb_model.predict(row_array)[0])
     xgb_proba = xgb_model.predict_proba(row_array)[0]
-    xgb_label = classes[xgb_idx]
+    yes_prob = float(xgb_proba[1])
+    no_prob  = float(xgb_proba[0])
+    if yes_prob >= 0.60:
+      xgb_label = "Yes"
+    elif no_prob >= 0.60:
+      xgb_label = "No"
+    else:
+      xgb_label = "Not sure"
 
     rf_idx    = int(rf_model.predict(row_array)[0])
     rf_label  = classes[rf_idx]
