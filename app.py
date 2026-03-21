@@ -150,7 +150,7 @@ def run_prediction(data):
     
     if yes_prob >= 0.70:
       xgb_label = "Will Retain"
-    elif no_prob >= 0.60:
+    elif yes_prob <= 0.60:
       xgb_label = "Will Leave"
     else:
       xgb_label = "Uncertain"
@@ -167,13 +167,15 @@ def run_prediction(data):
     }
 
     return {
-        "prediction":    xgb_label,
-        "rf_prediction": rf_label,
-        "risk_cluster":  risk_label,
-        "cluster_id":    cluster_id,
-        "probabilities": proba_breakdown,
-        "confidence":    round(float(max(xgb_proba)) * 100, 1),
-    }
+    "prediction": xgb_label,
+    "rf_prediction": rf_label,
+    "risk_cluster": risk_label,
+    "cluster_id": cluster_id,
+    "probabilities": proba_breakdown,
+    "confidence": round(float(max(xgb_proba)) * 100, 1),
+    "yes_prob": round(yes_prob * 100, 1),
+    "no_prob": round(no_prob * 100, 1),
+}
 
 # EMPLOYEE ROUTES
 @app.route("/")

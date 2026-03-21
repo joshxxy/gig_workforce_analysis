@@ -364,10 +364,25 @@ function drawDonut(pct, color) {
 // ─── RENDER RESULTS FROM FLASK /predict ──────────────────────────────────────
 function render(data, payload) {
   const cfg = {
-    'Yes':      {cls:'retain',emoji:'✅',label:'WILL RETAIN',sub:'This worker is predicted to continue gig work. Maintain current support levels.'},
-    'No':       {cls:'leave', emoji:'🚨',label:'WILL LEAVE', sub:'High attrition risk detected. Immediate HR intervention recommended.'},
-    'Not sure': {cls:'maybe', emoji:'⚠️',label:'UNCERTAIN',  sub:'Borderline prediction. Proactive engagement advised within 2 weeks.'},
-  };
+  'Will Retain': {
+    cls:'retain',
+    emoji:'✅',
+    label:'WILL RETAIN',
+    sub:'This worker is predicted to continue gig work.'
+  },
+  'Will Leave': {
+    cls:'leave',
+    emoji:'🚨',
+    label:'WILL LEAVE',
+    sub:'High attrition risk detected. Immediate HR action needed.'
+  },
+  'Uncertain': {
+    cls:'maybe',
+    emoji:'⚠️',
+    label:'UNCERTAIN',
+    sub:'Borderline case. Needs monitoring.'
+  }
+};
   const c = cfg[data.prediction] || cfg['Not sure'];
   const colorMap = {retain:'#3dffa0',leave:'#ff5f6d',maybe:'#ffd166'};
 
@@ -380,7 +395,10 @@ function render(data, payload) {
   setTimeout(()=>drawDonut(data.confidence, colorMap[c.cls]||'#4f8ef7'), 300);
 
   // Model result boxes
-  const cc=v=>v==='Yes'?'yes':v==='No'?'no':'maybe';
+  const cc = v =>
+    v === 'Will Retain' ? 'yes' :
+    v === 'Will Leave' ? 'no' :
+    'maybe';
   document.getElementById('xgbR').textContent=data.prediction;
   document.getElementById('xgbR').className='mb-res '+cc(data.prediction);
   document.getElementById('rfR').textContent=data.rf_prediction;
@@ -492,7 +510,10 @@ async function loadSubmissions() {
     subList.innerHTML = '';
 
     list.forEach((s, i) => {
-      const badgeCls = s.prediction==='Yes'?'yes':s.prediction==='No'?'no':'maybe';
+      const badgeCls =
+         s.prediction === 'Will Retain' ? 'yes' :
+         s.prediction === 'Will Leave' ? 'no' :
+        'maybe';
       const row = document.createElement('div');
       row.className   = 'sub-row' + (i===0 ? ' active' : '');
       row.dataset.wid = s.worker_id;
